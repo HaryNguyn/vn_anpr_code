@@ -1,0 +1,28 @@
+{
+  "backup": "C:\\Users\\ADMIN\\Downloads\\vn_anpr_code\\vn_anpr\\models\\backups\\20261118_225948",
+  "run": "C:\\Users\\ADMIN\\Downloads\\vn_anpr_code\\vn_anpr\\runtime\\real_ocr_20261118_225948",
+  "old_validation": {
+    "images": 377,
+    "correct": 2,
+    "exact_match": 0.005305039787798408
+  },
+  "new_validation": {
+    "images": 377,
+    "correct": 351,
+    "exact_match": 0.9310344827586207
+  },
+  "old_test": {
+    "images": 399,
+    "correct": 1,
+    "exact_match": 0.002506265664160401
+  },
+  "new_test": {
+    "images": 399,
+    "correct": 364,
+    "exact_match": 0.9122807017543859
+  },
+  "onnx_parity": "passed",
+  "deployed": true,
+  "deployment_rule": "New validation exact match must exceed old model.",
+  "scope": "OCR on cropped real plates; not end-to-end detection accuracy."
+}

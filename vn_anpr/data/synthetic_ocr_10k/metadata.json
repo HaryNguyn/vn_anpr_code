@@ -1,0 +1,10 @@
+{
+  "synthetic": true,
+  "seed": 42,
+  "counts": {
+    "train": 9000,
+    "val": 1000
+  },
+  "fonts": "OpenCV Hershey; not authentic Vietnamese plate typography",
+  "evaluation": "Synthetic validation only; use independent real images for acceptance."
+}

@@ -1,0 +1,81 @@
+{
+  "train": {
+    "rows": 18258,
+    "unique_labels": 6475,
+    "unique_image_hashes": 1500,
+    "duplicate_filenames": 0,
+    "missing_or_ambiguous": 16758,
+    "missing_examples": [
+      [
+        "11A08936_1.jpg",
+        0
+      ],
+      [
+        "12A11196_1.jpg",
+        0
+      ],
+      [
+        "12A11196_1_1.jpg",
+        0
+      ]
+    ],
+    "bad_lines_or_images": [],
+    "bad_characters": {
+      "h": 2
+    },
+    "label_lengths": {
+      "8": 13417,
+      "7": 1243,
+      "9": 1383,
+      "6": 2212,
+      "5": 3
+    },
+    "min_width_height": [
+      49,
+      20
+    ],
+    "median_width_height": [
+      127.0,
+      38.0
+    ],
+    "height_under_20": 0,
+    "ratio_under_2_6": 502
+  },
+  "val": {
+    "rows": 1544,
+    "unique_labels": 536,
+    "unique_image_hashes": 0,
+    "duplicate_filenames": 0,
+    "missing_or_ambiguous": 1544,
+    "missing_examples": [
+      [
+        "12A25121_1.jpg",
+        0
+      ],
+      [
+        "12A25121_1_1.jpg",
+        0
+      ],
+      [
+        "12C02640_1.jpg",
+        0
+      ]
+    ],
+    "bad_lines_or_images": [],
+    "bad_characters": {},
+    "label_lengths": {
+      "8": 1485,
+      "9": 24,
+      "7": 35
+    },
+    "min_width_height": [],
+    "median_width_height": [],
+    "height_under_20": 0,
+    "ratio_under_2_6": 0
+  },
+  "overlap": {
+    "labels": 29,
+    "filenames": 0,
+    "identical_files": 0
+  }
+}

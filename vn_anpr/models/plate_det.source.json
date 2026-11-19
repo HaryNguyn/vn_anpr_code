@@ -1,0 +1,19 @@
+{
+  "repository": "ishaqinu/yolo26n-license-plate-detection",
+  "revision": "b9162ec575eae48a1c3c3d42cd24e87fea83214b",
+  "url": "https://huggingface.co/ishaqinu/yolo26n-license-plate-detection/resolve/b9162ec575eae48a1c3c3d42cd24e87fea83214b/alpr_26n.onnx",
+  "sha256": "f42b5d166a13ab0802973cd8ee04a08225dd102f98488424cccbfe0e7d4e624a",
+  "license": "AGPL-3.0",
+  "origin": "Public pretrained model, not trained locally",
+  "input": [
+    1,
+    3,
+    640,
+    640
+  ],
+  "output": [
+    1,
+    5,
+    8400
+  ]
+}

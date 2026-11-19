@@ -1,0 +1,55 @@
+# ===================== CẤU HÌNH HỆ THỐNG NHẬN DIỆN BIỂN SỐ VIỆT NAM =====================
+detector:
+  backend: onnx            # onnx | ultralytics
+  weights: models/plate_det.onnx
+  input_size: 640
+  num_classes: 1           # 1 lớp "plate"; nếu tách 2 lớp (plate_car, plate_moto) đặt = 2
+  class_names: [plate]
+  conf_thres: 0.35
+  iou_thres: 0.50
+  num_keypoints: 0         # 4 nếu dùng mô hình YOLO-pose trả 4 góc biển (khuyến nghị cho góc lệch tới 30°)
+  pad_ratio: 0.10          # nới hộp bao 10% trước khi nắn chỉnh
+
+rectify:
+  one_line_min_ratio: 2.6  # tỷ lệ W/H >= 2.6 coi là biển 1 hàng (biển dài ô tô), ngược lại là 2 hàng
+  ocr_height: 48
+  ocr_width: 192
+  two_line_split_overlap: 0.06
+
+ocr:
+  backend: onnx_ctc
+  weights: models/plate_ocr.onnx
+  # Bộ ký tự PHẢI trùng với lúc huấn luyện. Chỉ số 0 dành cho CTC blank.
+  charset: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZĐ"
+  input_channels: 1
+  topk: 3
+
+quality:
+  min_plate_height_px: 20      # biển thấp hơn ngưỡng này -> không đọc, chuyển xử lý thủ công
+  min_sharpness: 30.0          # phương sai Laplacian
+  max_skew_deg: 30.0           # cảnh báo khi vượt điều kiện thiết kế (góc lệch tối đa 30 độ)
+
+decision:
+  accept_conf: 0.90            # ngưỡng chấp nhận tự động; dưới ngưỡng -> UNREAD (xử lý thủ công)
+  min_reads_video: 2           # video: số lần đọc tối thiểu trên 1 track trước khi chốt
+  min_agree: 0.70              # video/nhóm ảnh: tỷ lệ phiếu (có trọng số) tối thiểu cho chuỗi thắng
+
+video:
+  stride: 1                    # xử lý mỗi n khung hình
+  max_age: 15                  # số khung hình mất dấu trước khi đóng track
+  iou_match: 0.30
+  max_reads_per_track: 15
+
+# Văn phạm biển số Việt Nam (đã chuẩn hóa, bỏ dấu "-" và ".")
+# CƠ SỞ: Điều 37 và Phụ lục 02-04 Thông tư 79/2024/TT-BCA; QCVN 08:2024/BCA.
+# Các mẫu đánh dấu [CẦN KIỂM CHỨNG] phải được đối chiếu lại với Phụ lục trước khi đưa vào vận hành.
+grammar:
+  patterns:
+    - {name: oto_trong_nuoc_5so,  regex: '^\d{2}[A-Z]{1,2}\d{5}$'}
+    - {name: oto_trong_nuoc_4so,  regex: '^\d{2}[A-Z]{1,2}\d{4}$'}        # biển cũ 4 số còn lưu hành
+    - {name: moto_trong_nuoc,     regex: '^\d{2}[A-Z][A-Z0-9]\d{4,5}$'}   # VD 29B1 123.45, 29AA 123.45
+    - {name: moto_dien_MD,        regex: '^\d{2}MĐ\d\d{4,5}$'}            # [CẦN KIỂM CHỨNG]
+    - {name: nuoc_ngoai_a,        regex: '^\d{2}(NG|NN|QT|CV)\d{3}\d{2,3}$'}   # [CẦN KIỂM CHỨNG]
+    - {name: nuoc_ngoai_b,        regex: '^\d{2}\d{3}(NG|NN|QT|CV)\d{2,3}$'}   # [CẦN KIỂM CHỨNG]
+  # Để trống = không kiểm tra mã địa phương. Điền theo Phụ lục 02 TT 79/2024/TT-BCA (lưu ý sắp xếp tỉnh 2025).
+  valid_province_codes: []

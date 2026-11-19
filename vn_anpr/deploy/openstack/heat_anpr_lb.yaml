@@ -1,0 +1,40 @@
+heat_template_version: 2018-08-31
+description: >
+  Octavia load balancer cho cum VN-ANPR API (mo rong ngang, kiem tra /ready).
+  openstack stack create -t heat_anpr_lb.yaml --parameter vip_subnet=<subnet> --parameter member_ips="10.0.1.11,10.0.1.12" anpr-lb
+
+parameters:
+  vip_subnet: {type: string}
+  member_subnet: {type: string, default: ""}
+  member_ips: {type: comma_delimited_list}
+
+conditions:
+  same_subnet: {equals: [{get_param: member_subnet}, ""]}
+
+resources:
+  lb:
+    type: OS::Octavia::LoadBalancer
+    properties: {vip_subnet: {get_param: vip_subnet}}
+  listener:
+    type: OS::Octavia::Listener
+    properties: {loadbalancer: {get_resource: lb}, protocol: HTTP, protocol_port: 80}
+  pool:
+    type: OS::Octavia::Pool
+    properties: {listener: {get_resource: listener}, lb_algorithm: LEAST_CONNECTIONS, protocol: HTTP}
+  monitor:
+    type: OS::Octavia::HealthMonitor
+    properties: {pool: {get_resource: pool}, type: HTTP, url_path: /ready, delay: 10, timeout: 5, max_retries: 3}
+  members:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: {length: {get_param: member_ips}}
+      resource_def:
+        type: OS::Octavia::PoolMember
+        properties:
+          pool: {get_resource: pool}
+          address: {get_param: [member_ips, "%index%"]}
+          protocol_port: 8080
+          subnet: {if: [same_subnet, {get_param: vip_subnet}, {get_param: member_subnet}]}
+
+outputs:
+  vip: {value: {get_attr: [lb, vip_address]}}

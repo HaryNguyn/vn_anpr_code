@@ -1,0 +1,3 @@
+[console_scripts]
+vn-anpr = run_anpr:main
+vn-anpr-worker = service.stream_worker:main

@@ -1,0 +1,12 @@
+# Sao chép thành env_windows.yaml, điền giá trị thật. KHÔNG commit khóa API.
+parameters:
+  image: "WinSrv2022-Docker-Golden"           # [ĐIỀN THEO THỰC TẾ]
+  flavor: "m1.xlarge"                          # [ĐIỀN THEO THỰC TẾ]
+  key_name: "anpr-key"
+  network: "net-its-app"
+  api_allowed_cidr: "10.10.0.0/16"
+  admin_cidr: "10.99.0.0/24"
+  registry_image: "registry.vdtc.local/vn-anpr:1.0.0-ltsc2022"
+  data_volume_gb: 200
+  anpr_api_key: "thay-bang-khoa-ngau-nhien"
+  model_version: "v1.0"

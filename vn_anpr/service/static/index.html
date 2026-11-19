@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VN-ANPR · Kiểm thử nhận diện</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0b1220;color:#e5edf8}
+*{box-sizing:border-box}body{margin:0}main{max-width:1180px;margin:auto;padding:32px 22px}
+header{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:30px}
+h1{font-size:26px;margin:6px 0}h2{font-size:18px;margin:0 0 20px}p{line-height:1.6}
+.muted,small{color:#96a9c3}.brand{color:#5eead4;font-size:12px;letter-spacing:3px;font-weight:bold}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.card{background:#121e30;border:1px solid #26364c;border-radius:16px;padding:24px}
+.badge{border:1px solid #3c5674;border-radius:30px;padding:8px 12px;font-size:13px;display:inline-block}
+.ok{color:#5eead4}.warn{color:#fcd34d}.bad{color:#fda4af}
+label{display:block;font-size:13px;margin:18px 0 8px;color:#b8c9de}
+input,select,button{font:inherit}input,select{width:100%;background:#0b1423;border:1px solid #354863;border-radius:8px;padding:12px;color:#e5edf8}
+input:focus,select:focus,button:focus-visible{outline:2px solid #5eead4;outline-offset:3px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.upload{display:block;border:2px dashed #3c5674;padding:22px;border-radius:12px;text-align:center}
+.upload input{margin-top:14px;font-size:13px}button{border:0;border-radius:9px;padding:13px 18px;background:#5eead4;color:#082522;font-weight:700;cursor:pointer}
+button:disabled{opacity:.45;cursor:wait}.actions{display:flex;gap:12px;margin-top:22px;align-items:center}
+.secondary{background:#26364c;color:#dce8f8}#previews{display:flex;gap:8px;overflow:auto;margin-top:14px}
+.thumb{margin:0;min-width:110px;width:110px}.thumb img{width:110px;height:85px;object-fit:contain;background:#080f1b;border-radius:8px}
+.thumb figcaption{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#96a9c3}
+#plate{font-size:36px;font-weight:800;letter-spacing:2px;overflow-wrap:anywhere;margin:22px 0 8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:24px 0}.stat{padding:14px;background:#0b1423;border-radius:10px}.stat strong{display:block;margin-top:8px}
+#evidence{max-width:100%;max-height:180px;object-fit:contain;background:white;border-radius:8px;margin-top:10px}
+#message{min-height:24px;font-size:14px;white-space:pre-wrap}pre{background:#080f1b;padding:14px;border-radius:8px;max-height:350px;overflow:auto;font-size:12px}
+details{margin-top:20px}summary{cursor:pointer;color:#b8c9de}footer{font-size:13px;color:#96a9c3;margin-top:24px}a{color:#5eead4}
+[hidden]{display:none!important}@media(max-width:760px){.grid{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.card{padding:18px}.stats{gap:6px}.stat{padding:10px}}
+.tabs{display:flex;gap:8px;margin:18px 0}.tab{flex:1;border:1px solid #354863;border-radius:9px;padding:11px;background:#0b1423;color:#b8c9de;cursor:pointer}.tab.active{border-color:#5eead4;color:#082522;background:#5eead4}
+#videoPreview{width:100%;max-height:260px;margin-top:14px;border-radius:10px;background:#080f1b}
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="brand">VN-ANPR / TEST LAB</div><h1>Nhận diện biển số</h1><div class="muted">Tải ảnh hoặc video để kiểm tra detector và OCR.</div></div><span id="health" class="badge" role="status">Đang kiểm tra model…</span></header>
+<div class="grid">
+<section class="card">
+<h2>01 · Dữ liệu đầu vào</h2>
+<form id="form">
+<label for="key">API key · giá trị ANPR_API_KEY trong file .env</label>
+<input id="key" type="password" autocomplete="off" placeholder="Nhập key nếu API yêu cầu">
+<div class="row"><div><label for="lane">Mã làn</label><input id="lane" value="TEST" maxlength="100"></div>
+<div><label for="direction">Hướng di chuyển</label><select id="direction"><option value="">Không xác định</option><option value="in">Vào</option><option value="out">Ra</option></select></div></div>
+<div class="tabs"><button id="imageTab" class="tab active" type="button">Ảnh</button><button id="videoTab" class="tab" type="button">Video</button></div>
+<div id="imagePane">
+<label class="upload" for="files">Chọn 1–5 ảnh của cùng một xe<br><small>Tối đa 8 MB mỗi ảnh · JPG, PNG, WebP</small>
+<input id="files" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+<div id="previews"></div>
+</div>
+<div id="videoPane" hidden>
+<label class="upload" for="video">Chọn một video<br><small>Tối đa 200 MB · MP4, AVI, MOV, MKV, WebM</small>
+<input id="video" type="file" accept="video/mp4,video/x-msvideo,video/quicktime,video/webm,.mkv"></label>
+<video id="videoPreview" controls hidden></video>
+</div>
+<div class="actions"><button id="submit" type="submit">Nhận diện biển số →</button><button id="clear" class="secondary" type="button">Xóa ảnh</button></div>
+<p id="message" role="status" aria-live="polite"></p>
+</form>
+</section>
+<section class="card" aria-live="polite">
+<h2>02 · Kết quả nhận diện</h2>
+<span id="status" class="badge">Chưa có kết quả</span>
+<div id="plate">—</div><div id="candidate" class="muted">Chọn ảnh và nhấn Nhận diện để bắt đầu.</div>
+<div class="stats"><div class="stat"><small>Tin cậy OCR</small><strong id="confidence">—</strong></div><div class="stat"><small>Xử lý</small><strong id="latency">—</strong></div><div class="stat"><small>Lượt đọc</small><strong id="reads">—</strong></div></div>
+<div id="crop" hidden><small>Ảnh biển số đã cắt</small><br><img id="evidence" alt="Vùng biển số được nhận diện"></div>
+<details><summary>Phản hồi JSON</summary><pre id="json">Chưa có dữ liệu</pre></details>
+</section>
+</div>
+<footer>Detector pretrained · OCR đã fine-tune trên ảnh biển số thật. Đọc đúng toàn chuỗi 364/399 ảnh crop test (91,23%); chưa phải độ chính xác toàn pipeline. <a href="/docs">Tài liệu API ↗</a></footer>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+let urls = [];
+let mode = 'image';
+let videoUrl = null;
+function setMode(nextMode) {
+  mode = nextMode;
+  $('imageTab').classList.toggle('active', mode === 'image');
+  $('videoTab').classList.toggle('active', mode === 'video');
+  $('imagePane').hidden = mode !== 'image';
+  $('videoPane').hidden = mode !== 'video';
+  resetResult();
+  $('message').textContent = '';
+}
+$('imageTab').addEventListener('click', () => setMode('image'));
+$('videoTab').addEventListener('click', () => setMode('video'));
+function resetResult() {
+  $('status').textContent = 'Chưa có kết quả'; $('status').className = 'badge';
+  $('plate').textContent = '—'; $('candidate').textContent = 'Chọn ảnh và nhấn Nhận diện để bắt đầu.';
+  for (const id of ['confidence','latency','reads']) $(id).textContent = '—';
+  $('crop').hidden = true; $('evidence').removeAttribute('src'); $('json').textContent = 'Chưa có dữ liệu';
+}
+function validate() {
+  const files = [...$('files').files];
+  if (!files.length || files.length > 5) throw new Error('Vui lòng chọn từ 1 đến 5 ảnh của cùng một xe.');
+  for (const file of files) {
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) throw new Error('Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.');
+    if (file.size > 8*1024*1024) throw new Error(`Ảnh ${file.name} vượt quá 8 MB.`);
+  }
+  return files;
+}
+function preview() {
+  urls.forEach(URL.revokeObjectURL); urls = []; $('previews').replaceChildren(); resetResult();
+  $('message').textContent = '';
+  if (!$('files').files.length) return;
+  try {
+    for (const file of validate()) {
+      const figure = document.createElement('figure'); figure.className = 'thumb';
+      const img = document.createElement('img'); const url = URL.createObjectURL(file); urls.push(url);
+      img.src = url; img.alt = file.name;
+      const caption = document.createElement('figcaption'); caption.textContent = file.name;
+      figure.append(img, caption); $('previews').append(figure);
+    }
+  } catch (error) { $('message').textContent = error.message; }
+}
+$('files').addEventListener('change', preview);
+$('video').addEventListener('change', () => {
+  resetResult();
+  if (videoUrl) URL.revokeObjectURL(videoUrl);
+  videoUrl = null;
+  const file = $('video').files[0];
+  if (!file) { $('videoPreview').hidden = true; return; }
+  if (file.size > 200*1024*1024) { $('message').textContent = 'Video vượt quá 200 MB.'; return; }
+  videoUrl = URL.createObjectURL(file);
+  $('videoPreview').src = videoUrl;
+  $('videoPreview').hidden = false;
+});
+$('clear').addEventListener('click', () => {
+  $('files').value = '';
+  $('video').value = '';
+  if (videoUrl) URL.revokeObjectURL(videoUrl);
+  videoUrl = null;
+  $('videoPreview').removeAttribute('src');
+  $('videoPreview').hidden = true;
+  preview();
+});
+async function responseJSON(response) {
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('API key không đúng hoặc còn thiếu. Kiểm tra ANPR_API_KEY trong .env.');
+    throw new Error(typeof data.detail === 'string' ? data.detail : `API trả lỗi ${response.status}. Xem log máy chủ để biết chi tiết.`);
+  }
+  return data;
+}
+$('form').addEventListener('submit', async event => {
+  event.preventDefault();
+  resetResult();
+  const controls = [...$('form').querySelectorAll('input,select,button')];
+  const body = new FormData();
+  body.append('lane_id', $('lane').value);
+  body.append('direction', $('direction').value);
+  body.append('return_evidence', 'true');
+  const headers = {};
+  if ($('key').value) headers['X-API-Key'] = $('key').value;
+
+  let endpoint = '/v1/recognize';
+  if (mode === 'image') {
+    let files;
+    try { files = validate(); } catch (error) { $('message').textContent = error.message; return; }
+    files.forEach(file => body.append('files', file));
+  } else {
+    const video = $('video').files[0];
+    if (!video) { $('message').textContent = 'Vui lòng chọn một video.'; return; }
+    body.append('video', video);
+    endpoint = '/v1/recognize/video';
+  }
+
+  controls.forEach(el => el.disabled = true);
+  $('message').textContent = 'Đang nhận diện…';
+  $('submit').textContent = 'Đang xử lý…';
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 600000);
+  try {
+    const data = await responseJSON(await fetch(endpoint, {method:'POST', body, headers, signal:controller.signal}));
+    if (mode === 'video') {
+      const vehicles = data.vehicles || [];
+      const accepted = vehicles.filter(vehicle => vehicle.status === 'ACCEPT');
+      $('status').textContent = accepted.length ? `Tìm thấy ${accepted.length} xe` : 'Không có xe đủ tin cậy';
+      $('status').className = 'badge ' + (accepted.length ? 'ok' : 'warn');
+      $('plate').textContent = accepted.length ? accepted.map(vehicle => vehicle.text).join(' · ') : '—';
+      $('candidate').textContent = `Đã xử lý ${data.video.frames} khung hình · ${data.n_vehicles} phương tiện được theo dõi`;
+      const avgConf = accepted.length
+        ? accepted.reduce((sum, vehicle) => sum + Number(vehicle.conf || 0), 0) / accepted.length
+        : 0;
+      $('confidence').textContent = accepted.length ? (avgConf * 100).toFixed(1)+'%' : '—';
+      $('latency').textContent = data.processing_ms+' ms';
+      $('reads').textContent = vehicles.reduce((sum, vehicle) => sum + (vehicle.n_reads || 0), 0);
+      $('json').textContent = JSON.stringify(data,null,2);
+      $('message').textContent = `Đã xử lý ${data.video.frames} khung hình.`;
+    } else {
+      const names = {ACCEPT:'Đã nhận diện', UNREAD:'Chưa đủ tin cậy', NO_PLATE:'Không tìm thấy biển số', LOW_QUALITY:'Ảnh chất lượng thấp'};
+      $('status').textContent = names[data.status] || data.status;
+      $('status').className = 'badge ' + (data.status === 'ACCEPT' ? 'ok' : 'warn');
+      $('plate').textContent = data.plate || '—';
+      $('candidate').textContent = data.candidate ? `Chuỗi ứng viên: ${data.candidate}` : 'Không có chuỗi ứng viên.';
+      $('confidence').textContent = (Number(data.conf)*100).toFixed(1)+'%';
+      $('latency').textContent = data.processing_ms+' ms';
+      $('reads').textContent = (data.reads || []).length;
+      if (data.evidence_jpg_b64) { $('evidence').src = 'data:image/jpeg;base64,'+data.evidence_jpg_b64; $('crop').hidden = false; }
+      const display = {...data};
+      if (display.evidence_jpg_b64) display.evidence_jpg_b64 = '[Ảnh được hiển thị ở trên]';
+      $('json').textContent = JSON.stringify(display,null,2);
+      $('message').textContent = 'Đã xử lý '+data.n_images+' ảnh.';
+    }
+  } catch (error) {
+    $('message').textContent = error.name === 'AbortError' ? 'Quá thời gian chờ 600 giây. Kiểm tra máy chủ.' : error.message;
+    $('status').textContent = 'Không thực hiện được';
+    $('status').className = 'badge bad';
+  } finally {
+    clearTimeout(timeout);
+    controls.forEach(el => el.disabled = false);
+    $('submit').textContent = 'Nhận diện biển số →';
+  }
+});
+fetch('/ready').then(responseJSON).then(() => {
+  $('health').textContent = '● Model sẵn sàng'; $('health').className = 'badge ok';
+}).catch(error => { $('health').textContent = '● Model chưa sẵn sàng'; $('health').className = 'badge warn'; $('health').title = error.message; });
+</script>
+</body>
+</html>

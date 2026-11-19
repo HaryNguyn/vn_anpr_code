@@ -1,0 +1,10 @@
+# Lõi suy luận (bắt buộc)
+numpy>=1.24
+opencv-python>=4.8
+onnxruntime>=1.16          # hoặc onnxruntime-gpu / TensorRT EP khi triển khai GPU
+PyYAML>=6.0
+
+# Tùy chọn - huấn luyện / backend phát hiện ultralytics
+# LƯU Ý BẢN QUYỀN: ultralytics phát hành theo AGPL-3.0; dùng thương mại đóng mã cần Enterprise License
+# ultralytics>=8.3
+# torch>=2.2

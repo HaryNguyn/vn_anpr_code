@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vn-anpr"
+version = "1.0.0"
+description = "Nhận diện biển số ô tô, xe máy Việt Nam – module tích hợp bãi đỗ"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "opencv-python-headless>=4.8", "onnxruntime>=1.16", "PyYAML>=6.0"]
+
+[project.optional-dependencies]
+service = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "python-multipart>=0.0.9"]
+dev = ["pytest>=8", "httpx>=0.27", "onnx>=1.15"]
+
+[project.scripts]
+vn-anpr = "run_anpr:main"
+vn-anpr-worker = "service.stream_worker:main"
+
+[tool.setuptools]
+packages = ["anpr", "service"]
+py-modules = ["run_anpr", "evaluate"]
+
+[tool.setuptools.package-data]
+service = ["static/*.html"]

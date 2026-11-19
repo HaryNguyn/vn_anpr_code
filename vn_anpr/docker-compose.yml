@@ -1,0 +1,25 @@
+# Chạy tại máy chủ biên (edge) của bãi đỗ: 1 dịch vụ API (trigger) + 1 worker RTSP (luồng liên tục)
+services:
+  anpr-api:
+    build: .
+    image: vdtc/vn-anpr:1.0.0
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    environment:
+      ANPR_CONFIG: /app/config.yaml
+      ANPR_API_KEY: ${ANPR_API_KEY}
+      ANPR_MAX_CONCURRENCY: "2"
+      ANPR_MODEL_VERSION: ${ANPR_MODEL_VERSION:-v1.0}
+    volumes: ["./models:/app/models:ro", "./runtime:/app/runtime"]
+
+  anpr-worker:
+    image: vdtc/vn-anpr:1.0.0
+    restart: unless-stopped
+    command: ["python", "-m", "service.stream_worker", "--config", "/app/config.yaml", "--lanes", "/app/lanes.yaml"]
+    environment:
+      PARKING_WEBHOOK_URL: ${PARKING_WEBHOOK_URL}
+      PARKING_API_KEY: ${PARKING_API_KEY}
+      CAM_USER: ${CAM_USER}
+      CAM_PASS: ${CAM_PASS}
+      ANPR_MODEL_VERSION: ${ANPR_MODEL_VERSION:-v1.0}
+    volumes: ["./models:/app/models:ro", "./runtime:/app/runtime", "./lanes.yaml:/app/lanes.yaml:ro"]

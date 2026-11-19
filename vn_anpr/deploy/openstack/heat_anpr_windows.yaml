@@ -1,0 +1,83 @@
+heat_template_version: 2018-08-31
+description: >
+  VN-ANPR microservice tren Windows Server 2022 (Windows containers, process isolation) - 1 node.
+  Yeu cau: anh Glance Windows Server 2022 da cai VirtIO, Cloudbase-Init va Docker CE/MCR (golden image).
+  Trien khai:  openstack stack create -t heat_anpr_windows.yaml -e env_windows.yaml anpr-node-01
+
+parameters:
+  image:            {type: string, description: Anh Glance Windows Server 2022 co san Docker}
+  flavor:           {type: string, default: m1.xlarge, description: "[DIEN THEO THUC TE] vd 8 vCPU/16 GB"}
+  key_name:         {type: string, description: Keypair de giai ma mat khau Administrator (nova get-password)}
+  network:          {type: string}
+  api_allowed_cidr: {type: string, description: Dai IP phan mem bai do / load balancer duoc goi API}
+  admin_cidr:       {type: string, description: Dai IP quan tri duoc RDP/WinRM}
+  registry_image:   {type: string, description: "vd registry.vdtc.local/vn-anpr:1.0.0-ltsc2022"}
+  data_volume_gb:   {type: number, default: 200, description: O dia du lieu (mo hinh, anh bang chung)}
+  anpr_api_key:     {type: string, hidden: true}
+  model_version:    {type: string, default: v1.0}
+
+resources:
+  sg:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: VN-ANPR
+      rules:
+        - {direction: ingress, protocol: tcp, port_range_min: 8080, port_range_max: 8080, remote_ip_prefix: {get_param: api_allowed_cidr}}
+        - {direction: ingress, protocol: tcp, port_range_min: 3389, port_range_max: 3389, remote_ip_prefix: {get_param: admin_cidr}}
+        - {direction: ingress, protocol: tcp, port_range_min: 5986, port_range_max: 5986, remote_ip_prefix: {get_param: admin_cidr}}
+
+  port:
+    type: OS::Neutron::Port
+    properties:
+      network: {get_param: network}
+      security_groups: [{get_resource: sg}]
+
+  data_volume:
+    type: OS::Cinder::Volume
+    properties:
+      size: {get_param: data_volume_gb}
+
+  server:
+    type: OS::Nova::Server
+    properties:
+      image: {get_param: image}
+      flavor: {get_param: flavor}
+      key_name: {get_param: key_name}
+      networks: [{port: {get_resource: port}}]
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __IMAGE__: {get_param: registry_image}
+            __APIKEY__: {get_param: anpr_api_key}
+            __MV__: {get_param: model_version}
+          template: |
+            #ps1_sysnative
+            $ErrorActionPreference = 'Stop'
+            Start-Transcript C:\anpr-bootstrap.log -Append
+            # 1) Cho o Cinder duoc gan (toi da 5 phut) roi khoi tao thanh D:
+            for ($i = 0; $i -lt 30; $i++) { $d = Get-Disk | Where-Object PartitionStyle -eq 'RAW' | Select-Object -First 1; if ($d) { break }; Start-Sleep 10 }
+            if ($d) { Initialize-Disk $d.Number -PartitionStyle GPT -PassThru |
+                      New-Partition -DriveLetter D -UseMaximumSize | Format-Volume -FileSystem NTFS -NewFileSystemLabel ANPR -Confirm:$false }
+            New-Item -ItemType Directory -Force D:\anpr\models, D:\anpr\runtime, D:\anpr\conf | Out-Null
+            # 2) Mo tuong lua Windows cho API
+            New-NetFirewallRule -DisplayName 'VN-ANPR 8080' -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -ErrorAction SilentlyContinue
+            # 3) Keo anh va chay container (mo hinh duoc chep vao D:\anpr\models qua quy trinh phat hanh mo hinh)
+            docker pull __IMAGE__
+            docker rm -f anpr-api 2>$null
+            docker run -d --name anpr-api --isolation process --restart unless-stopped -p 8080:8080 `
+              -e ANPR_API_KEY=__APIKEY__ -e ANPR_MODEL_VERSION=__MV__ `
+              -v D:\anpr\models:C:\app\models -v D:\anpr\runtime:C:\app\runtime __IMAGE__
+            Stop-Transcript
+
+  attach:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: {get_resource: server}
+      volume_id: {get_resource: data_volume}
+
+outputs:
+  api_url:
+    value: {str_replace: {template: "http://IP:8080", params: {IP: {get_attr: [port, fixed_ips, 0, ip_address]}}}}
+  server_ip:
+    value: {get_attr: [port, fixed_ips, 0, ip_address]}

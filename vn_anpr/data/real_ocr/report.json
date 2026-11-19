@@ -1,0 +1,27 @@
+{
+  "source": "C:\\Users\\ADMIN\\Downloads\\data_train_vietocr-20261118T153040Z-1-001\\data_train_vietocr",
+  "seed": 42,
+  "splits": {
+    "val": {
+      "images": 377,
+      "unique_plates": 154,
+      "two_line": 137
+    },
+    "test": {
+      "images": 399,
+      "unique_plates": 154,
+      "two_line": 175
+    },
+    "train": {
+      "images": 3603,
+      "unique_plates": 1234,
+      "two_line": 1171
+    }
+  },
+  "missing_label_rows": 15423,
+  "duplicate_records_removed": 1500,
+  "conflicting_image_labels_removed": 0,
+  "rejected": [],
+  "split_policy": "Disjoint normalized plate strings and exact file hashes.",
+  "layout_policy": "Aspect-ratio heuristic; requires manual review for tightly cropped plates."
+}

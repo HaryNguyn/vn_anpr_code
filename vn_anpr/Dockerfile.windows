@@ -1,0 +1,38 @@
+# escape=`
+# ===== Ảnh Windows container cho VN-ANPR (Windows Server 2022, process isolation) =====
+# Host chạy container PHẢI là Windows Server 2022 khi dùng ltsc2022 + process isolation.
+# Build:  docker build -f Dockerfile.windows -t <registry>/vn-anpr:1.0.0-ltsc2022 .
+ARG WIN_BASE=mcr.microsoft.com/windows/servercore:ltsc2022
+FROM ${WIN_BASE}
+
+# Ghim phiên bản Python; nên khai báo PYTHON_SHA256 lấy từ python.org để kiểm tra toàn vẹn bộ cài.
+ARG PYTHON_VERSION=3.12.10
+ARG PYTHON_SHA256=""
+SHELL ["powershell", "-NoProfile", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+RUN $url = ('https://www.python.org/ftp/python/{0}/python-{0}-amd64.exe' -f $env:PYTHON_VERSION); `
+    Write-Host "Tai $url"; Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile python.exe; `
+    if ($env:PYTHON_SHA256 -and ((Get-FileHash python.exe -Algorithm SHA256).Hash -ne $env:PYTHON_SHA256)) { throw 'Sai SHA256 bo cai Python' }; `
+    $p = Start-Process python.exe -Wait -PassThru -ArgumentList '/quiet','InstallAllUsers=1','PrependPath=0','Include_test=0','Include_doc=0','TargetDir=C:\Python'; `
+    if ($p.ExitCode -ne 0) { throw ('Cai Python loi: ' + $p.ExitCode) }; Remove-Item python.exe -Force; `
+    $path = 'C:\Python;C:\Python\Scripts;' + [Environment]::GetEnvironmentVariable('PATH', 'Machine'); `
+    [Environment]::SetEnvironmentVariable('PATH', $path, 'Machine')
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONIOENCODING=utf-8
+WORKDIR C:\app
+COPY pyproject.toml README.md ./
+COPY anpr ./anpr
+COPY service ./service
+COPY run_anpr.py evaluate.py config.yaml lanes.yaml ./
+# Cài gói và kiểm tra sớm: nạp được OpenCV và ONNX Runtime trong Server Core (rủi ro thiếu DLL hệ thống)
+RUN python -m pip install --no-cache-dir --upgrade pip; `
+    python -m pip install --no-cache-dir '.[service]'; `
+    python -c "import cv2, onnxruntime; print('cv2', cv2.__version__, 'ort', onnxruntime.__version__)"
+
+# Windows container chỉ gắn được THƯ MỤC (không gắn từng file): cấu hình đặt trong C:\app\conf
+# Mô hình và dữ liệu chạy gắn từ ngoài vào (volume) – cập nhật mô hình không phải build lại ảnh
+VOLUME ["C:/app/models", "C:/app/runtime", "C:/app/conf"]
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 `
+  CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=4)"
+CMD ["python", "-m", "uvicorn", "service.app:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]

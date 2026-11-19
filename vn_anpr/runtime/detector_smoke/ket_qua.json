@@ -1,0 +1,24 @@
+{
+  "images": [
+    {
+      "source": "data/synthetic_ocr/val/000000.jpg",
+      "frame": -1,
+      "status": "UNREAD",
+      "text": "",
+      "candidate": "61D43817",
+      "raw": "61D43817",
+      "conf": 0.8301,
+      "pattern": "oto_trong_nuoc_5so",
+      "layout": "one_line",
+      "plate_h_px": 104.1,
+      "sharpness": 4542.5,
+      "skew_deg": 0.0,
+      "box": [
+        1.0,
+        3.1,
+        514.5,
+        107.3
+      ]
+    }
+  ]
+}
